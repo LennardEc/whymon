@@ -36,6 +36,8 @@ module Trace : sig
 
   val parse_from_channel: Stdio.In_channel.t -> Parsebuf.t option -> cursor
 
+  val parse_from_channel_online: Stdio.In_channel.t -> Parsebuf.t option -> cursor
+
   val parse_from_string: string -> cursor
 
 end
