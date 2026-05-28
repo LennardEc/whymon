@@ -1750,6 +1750,34 @@ let exec mode measure f inc =
   let ms = MState.init mf in
   step None ms
 
+let exec_online mode measure f inc =
+    let vars = Set.elements (Formula.fv f) in
+    let out tstp_expls (ms: MState.t) =
+      match mode with
+      | Out.Plain.UNVERIFIED -> Out.Plain.expls tstp_expls None None None mode
+      | Out.Plain.LATEX      -> Out.Plain.expls tstp_expls None None (Some(f)) mode
+      | Out.Plain.LIGHT      -> Out.Plain.expls tstp_expls None None None mode
+      | Out.Plain.VERIFIED ->
+         let c = Checker_interface.check (Queue.to_list ms.tsdbs) f (List.map tstp_expls ~f:snd) in
+         Out.Plain.expls tstp_expls (Some(c)) None None mode
+      | Out.Plain.DEBUG ->
+         let c = Checker_interface.check (Queue.to_list ms.tsdbs) f (List.map tstp_expls ~f:snd) in
+         let paths = Checker_interface.false_paths (Queue.to_list ms.tsdbs) f (List.map tstp_expls ~f:snd) in
+         Out.Plain.expls tstp_expls (Some(c)) (Some(paths)) None mode
+      | Out.Plain.DEBUGVIS -> raise (Failure "function exec is undefined for the mode debugvis") in
+    let rec step pb_opt ms =
+      match Other_parser.Trace.parse_from_channel_online inc pb_opt with
+      | Finished -> ()
+      | Skipped (pb, msg) -> Stdio.printf "The parser skipped an event because %s" msg;
+                             step (Some(pb)) ms
+      | Processed pb -> let (tstp_expls, ms) = mstep mode vars pb.ts pb.db ms false in
+                        out tstp_expls ms;
+                        Stdio.printf "At time point\n%!";
+                        step (Some(pb)) ms in
+    let mf = init f in
+    let ms = MState.init mf in
+    step None ms
+
 let exec_vis (ms_opt: MState.t option) f log =
   let vars = Set.elements (Formula.fv f) in
   let step (ms: MState.t) db =
