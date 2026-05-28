@@ -108,11 +108,7 @@ module Whymon = struct
       let formula = Option.value_exn !formula_ref in
       match !mode_ref with
       | Out.Plain.DEBUGVIS -> let _ = Monitor.exec_vis None formula !logstr_ref in ()
-      | _ ->
-      (if !latency then
-        let _ = Monitor.exec_online !mode_ref !measure_ref formula !Etc.inc_ref in ()
-      else
-        let _ = Monitor.exec !mode_ref !measure_ref formula !Etc.inc_ref in ())
+      | _ -> let _ = Monitor.exec !mode_ref !measure_ref formula !Etc.inc_ref !latency in ()
     with End_of_file -> Out_channel.close !Etc.outc_ref; exit 0
 
 end
